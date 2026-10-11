@@ -6,7 +6,7 @@ Guidance for agent skills working in this repository. Read this before starting 
 
 `klientela` is a self-hosted, single-tenant appointment-scheduling system for one hair/nail salon, plus a companion Android app that sends customer SMS reminders from the salon's own dedicated phone (no third-party SMS service). It is delivered as a TypeScript monorepo. The full design lives in the spec under `.ai/specs/`; this file is the routing map for working in the code.
 
-**Current state: greenfield.** The repository contains only process/docs setup and no application code yet. Every path below is the *planned* layout from the spec — treat the `Key rules` cells marked `TODO` as unset until the code exists and this file is updated from the real tree.
+**Current state: Phase 1 complete.** `packages/core`, `apps/server` and `apps/web` are implemented; the Android sender (`apps/android`) is deferred and absent. The routing table below reflects the intended layout — some of its `TODO` notes predate the code.
 
 ## Task-routing table
 
@@ -26,7 +26,7 @@ Guidance for agent skills working in this repository. Read this before starting 
 
 ## Validation
 
-`.ai/agentic.config.json` currently has an **empty** `validation.commands` list (no code yet). When the monorepo is scaffolded, set the ordered gate there — expected: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` — and mirror it in `SDLC.md`.
+The ordered gate in `.ai/agentic.config.json` is `pnpm typecheck`, `pnpm test`, `pnpm build`, run in that order. There is **no `lint` command** configured — TypeScript `strict` is the static check; do not assume `pnpm lint` exists.
 
 ## Where things live
 
