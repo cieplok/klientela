@@ -44,6 +44,6 @@ This is the first of the "Phase 1 completion" slices called out as out-of-scope 
 
 ### Phase 1: Employee hours & time-off UI
 
-- [ ] 1.1 Weekly-hours editor
-- [ ] 1.2 Time-off management
+- [x] 1.1 Weekly-hours editor — 428978c
+- [x] 1.2 Time-off management — 428978c
 - [ ] 1.3 Validation
