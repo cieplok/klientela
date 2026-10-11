@@ -12,6 +12,7 @@ import {
   reminder,
 } from "../db/schema.js";
 import { BookingError, createAppointment, updateAppointment } from "../services/booking.js";
+import { queryAvailability } from "../services/availability.js";
 import { runScheduler, scheduleReminder } from "../services/reminders.js";
 
 // Monday 2026-10-12 10:00 Europe/Warsaw (CEST).
@@ -114,5 +115,19 @@ describe("booking", () => {
     // The freed slot is taken by someone else.
     createAppointment(handle, { customerId, employeeId, appointmentTypeId: typeId, startAt: T });
     expect(() => updateAppointment(handle, { appointmentId: first.id, status: "scheduled" })).toThrow(BookingError);
+  });
+});
+
+describe("availability query", () => {
+  it("excludes the appointment being rescheduled from its own busy set", () => {
+    const { handle, employeeId, customerId, typeId } = setup();
+    const appt = createAppointment(handle, { customerId, employeeId, appointmentTypeId: typeId, startAt: T });
+    const base = { employeeIds: [employeeId], typeId, from: T, to: T + HOUR, slotStepMin: 1 };
+
+    const occupied = queryAvailability(handle.db, base);
+    expect(occupied.some((s) => s.start === T)).toBe(false);
+
+    const excludingSelf = queryAvailability(handle.db, { ...base, excludeAppointmentId: appt.id });
+    expect(excludingSelf.some((s) => s.start === T)).toBe(true);
   });
 });

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { fromLocalInput, toLocalInput } from "../lib/format";
+import { useEffect, useMemo, useState } from "react";
+import { dateInputValue, dayBounds, fmtTime } from "../lib/format";
 import { trpc } from "../trpc";
 
 export interface AppointmentRow {
@@ -52,12 +52,52 @@ export function AppointmentDrawer({ mode, initial, employees, types, customers, 
   const [typeId, setTypeId] = useState(appt?.appointmentTypeId ?? types[0]?.id ?? "");
   const [customerId, setCustomerId] = useState(appt?.customerId ?? customers[0]?.id ?? "");
   const [employeeId, setEmployeeId] = useState(appt?.employeeId ?? initial.employeeId ?? employees[0]?.id ?? "");
-  const [start, setStart] = useState(toLocalInput(appt?.startAt ?? initial.startAt ?? Date.now()));
+  const initialStart = appt?.startAt ?? initial.startAt ?? Date.now();
+  const [day, setDay] = useState(dateInputValue(initialStart));
+  const [startAt, setStartAt] = useState(initialStart);
   const [notes, setNotes] = useState(appt?.notes ?? "");
 
   const selectedType = types.find((t) => t.id === typeId);
-  const capable = (t: TypeOpt | undefined) =>
-    !t || t.employeeIds.length === 0 ? employees : employees.filter((e) => t.employeeIds.includes(e.id));
+  const capableEmployees = useMemo(
+    () =>
+      !selectedType || selectedType.employeeIds.length === 0
+        ? employees
+        : employees.filter((e) => selectedType.employeeIds.includes(e.id)),
+    [selectedType, employees],
+  );
+
+  // Keep the selected employee valid when the service changes.
+  useEffect(() => {
+    if (capableEmployees.length > 0 && !capableEmployees.some((e) => e.id === employeeId)) {
+      setEmployeeId(capableEmployees[0]!.id);
+    }
+  }, [capableEmployees, employeeId]);
+
+  // The engine decides which start times are bookable for this employee/day/type.
+  const [from, to] = dayBounds(day);
+  const availability = trpc.availability.query.useQuery(
+    {
+      employeeIds: employeeId ? [employeeId] : [],
+      typeId,
+      from,
+      to,
+      slotStepMin: 15,
+      ...(appt ? { excludeAppointmentId: appt.id } : {}),
+    },
+    { enabled: Boolean(typeId && employeeId) },
+  );
+  const slots = useMemo(
+    () => (availability.data ?? []).filter((s) => s.employeeId === employeeId),
+    [availability.data, employeeId],
+  );
+  const slotKey = slots.map((s) => s.start).join(",");
+
+  // Snap the chosen start onto a slot the engine actually allows.
+  useEffect(() => {
+    const starts = slotKey ? slotKey.split(",").map(Number) : [];
+    if (starts.length > 0 && !starts.includes(startAt)) setStartAt(starts[0]!);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slotKey]);
 
   function refresh() {
     void utils.appointments.list.invalidate();
@@ -68,16 +108,19 @@ export function AppointmentDrawer({ mode, initial, employees, types, customers, 
   const create = trpc.appointments.create.useMutation({ onSuccess: () => { refresh(); onClose(); } });
   const update = trpc.appointments.update.useMutation({ onSuccess: () => { refresh(); onClose(); } });
 
+  const selectedSlot = slots.find((s) => s.start === startAt);
+
   function save() {
-    const startAt = fromLocalInput(start);
+    if (!selectedSlot) return;
     if (mode === "create") {
-      create.mutate({ customerId, employeeId, appointmentTypeId: typeId, startAt, notes: notes || undefined });
+      create.mutate({ customerId, employeeId, appointmentTypeId: typeId, startAt: selectedSlot.start, notes: notes || undefined });
     } else if (appt) {
-      update.mutate({ appointmentId: appt.id, employeeId, startAt, notes });
+      update.mutate({ appointmentId: appt.id, employeeId, startAt: selectedSlot.start, notes });
     }
   }
 
   const error = create.error ?? update.error;
+  const endAt = selectedSlot && selectedType ? selectedSlot.start + selectedType.totalMin * 60_000 : null;
 
   return (
     <div className="drawer-backdrop" onClick={onClose}>
@@ -89,7 +132,7 @@ export function AppointmentDrawer({ mode, initial, employees, types, customers, 
 
         <div className="field">
           <label>Service</label>
-          <select value={typeId} onChange={(e) => { setTypeId(e.target.value); }} disabled={mode === "edit"}>
+          <select value={typeId} onChange={(e) => setTypeId(e.target.value)} disabled={mode === "edit"}>
             {types.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name} ({t.totalMin} min)
@@ -132,7 +175,7 @@ export function AppointmentDrawer({ mode, initial, employees, types, customers, 
         <div className="field">
           <label>Employee</label>
           <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
-            {capable(selectedType).map((e) => (
+            {capableEmployees.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.name}
               </option>
@@ -141,8 +184,33 @@ export function AppointmentDrawer({ mode, initial, employees, types, customers, 
         </div>
 
         <div className="field">
-          <label>Start</label>
-          <input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} />
+          <label>Date</label>
+          <input type="date" value={day} onChange={(e) => setDay(e.target.value)} />
+        </div>
+
+        <div className="field">
+          <label>Start time (engine-checked availability)</label>
+          <select
+            value={selectedSlot ? String(startAt) : ""}
+            onChange={(e) => setStartAt(Number(e.target.value))}
+            disabled={slots.length === 0}
+          >
+            {slots.length === 0 ? (
+              <option value="">{availability.isLoading ? "Checking availability…" : "No availability on this day"}</option>
+            ) : (
+              slots.map((s) => (
+                <option key={s.start} value={s.start}>
+                  {fmtTime(s.start)}
+                </option>
+              ))
+            )}
+          </select>
+          {endAt !== null && (
+            <span className="muted">
+              {fmtTime(startAt)}–{fmtTime(endAt)} · {slots.length} slot{slots.length === 1 ? "" : "s"} free
+            </span>
+          )}
+          {availability.isError && <span className="error">{availability.error.message}</span>}
         </div>
 
         <div className="field">
@@ -153,7 +221,11 @@ export function AppointmentDrawer({ mode, initial, employees, types, customers, 
         {error && <p className="error">{error.message}</p>}
 
         <div className="row" style={{ marginTop: 8 }}>
-          <button className="primary" onClick={save} disabled={create.isPending || update.isPending || !customerId}>
+          <button
+            className="primary"
+            onClick={save}
+            disabled={create.isPending || update.isPending || !customerId || !selectedSlot}
+          >
             {mode === "create" ? "Book" : "Save"}
           </button>
           {mode === "edit" && appt && (

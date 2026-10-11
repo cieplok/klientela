@@ -33,3 +33,17 @@ export function fromLocalInput(value: string): number {
 export function minutesBetween(a: number, b: number): number {
   return Math.round((b - a) / MS_PER_MIN);
 }
+
+/** `YYYY-MM-DD` (local) for the day containing `ts`. */
+export function dateInputValue(ts: number): string {
+  const d = new Date(ts);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** Local `[start, end)` epoch bounds for a `YYYY-MM-DD` string. */
+export function dayBounds(dateStr: string): [number, number] {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const start = new Date(y!, (m ?? 1) - 1, d ?? 1, 0, 0, 0, 0).getTime();
+  return [start, start + 24 * 60 * MS_PER_MIN];
+}
