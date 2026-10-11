@@ -46,17 +46,19 @@ Ship **Phase 1** of the salon booking system: a self-hosted, single-tenant TypeS
 
 ## Progress
 
+PR: #2 (https://github.com/cieplok/klientela/pull/2)
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Booking core + reminder seam
 
-- [ ] 1.1 Monorepo scaffold
-- [ ] 1.2 Core domain model
-- [ ] 1.3 Availability engine
-- [ ] 1.4 Server foundation
-- [ ] 1.5 Customers & employees
-- [ ] 1.6 Appointment types
-- [ ] 1.7 Appointments & availability
-- [ ] 1.8 Reminder queue + /sync/v1
-- [ ] 1.9 Web app
-- [ ] 1.10 Deployment
+- [x] 1.1 Monorepo scaffold — 802252c
+- [x] 1.2 Core domain model — 802252c
+- [x] 1.3 Availability engine — 802252c
+- [x] 1.4 Server foundation — 802252c
+- [x] 1.5 Customers & employees — 802252c
+- [x] 1.6 Appointment types — 802252c
+- [x] 1.7 Appointments & availability — 802252c
+- [x] 1.8 Reminder queue + /sync/v1 — 802252c
+- [x] 1.9 Web app — bce1b11
+- [x] 1.10 Deployment — bce1b11
