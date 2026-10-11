@@ -1,0 +1,17 @@
+{
+  "name": "klientela",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@9.15.9",
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "dev": "turbo run dev",
+    "seed": "pnpm --filter @klientela/server seed"
+  },
+  "devDependencies": {
+    "turbo": "2.11.7",
+    "typescript": "5.9.3"
+  }
+}
