@@ -1,0 +1,21 @@
+{$SALON_HOST:localhost} {
+	encode gzip
+
+	handle /trpc/* {
+		reverse_proxy server:3000
+	}
+
+	handle /sync/* {
+		reverse_proxy server:3000
+	}
+
+	handle /health {
+		reverse_proxy server:3000
+	}
+
+	handle {
+		root * /srv/web
+		try_files {path} /index.html
+		file_server
+	}
+}
