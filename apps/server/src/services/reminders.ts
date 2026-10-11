@@ -52,7 +52,9 @@ export function scheduleReminder(db: Db, appointmentId: string): void {
   if (!appt) return;
   const key = reminderKey(appointmentId);
 
-  if (appt.status === "cancelled") {
+  // Only a still-scheduled appointment deserves a live reminder; cancelled,
+  // completed and no-show appointments drop theirs.
+  if (appt.status !== "scheduled") {
     cancelReminder(db, appointmentId);
     return;
   }
@@ -78,6 +80,13 @@ export function scheduleReminder(db: Db, appointmentId: string): void {
   const existing = db.select().from(reminder).where(eq(reminder.idempotencyKey, key)).get();
   if (existing) {
     if (existing.status === "sent") return;
+    const unchanged =
+      existing.scheduledFor === scheduledFor &&
+      existing.body === body &&
+      existing.phoneE164 === cust.phone;
+    // A scheduler tick must never touch an in-flight claim: only a genuine change
+    // (or an expired lease, released elsewhere) may send a claimed row back to pending.
+    if (existing.status === "claimed" && unchanged) return;
     db.update(reminder)
       .set({
         phoneE164: cust.phone,

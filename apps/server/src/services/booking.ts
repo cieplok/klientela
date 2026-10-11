@@ -77,7 +77,10 @@ export function updateAppointment(handle: DbHandle, input: UpdateAppointmentInpu
   const totalMs = assertCapable(db, existing.appointmentTypeId, employeeId);
 
   const run = sqlite.transaction(() => {
-    if (status !== "cancelled" && (startAt !== existing.startAt || employeeId !== existing.employeeId)) {
+    if (
+      status !== "cancelled" &&
+      (startAt !== existing.startAt || employeeId !== existing.employeeId || existing.status === "cancelled")
+    ) {
       const available = slotIsBookable(db, employeeId, existing.appointmentTypeId, startAt, existing.id);
       if (!available) throw new BookingError("The selected slot is not available");
     }

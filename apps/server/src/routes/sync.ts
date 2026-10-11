@@ -135,7 +135,12 @@ export function registerSyncRoutes(app: FastifyInstance, handle: DbHandle): void
     let ignored = 0;
     for (const result of parsed.data.results) {
       const row = db.select().from(reminder).where(eq(reminder.id, result.id)).get();
-      if (!row || row.idempotencyKey !== result.idempotencyKey || row.status === "sent") {
+      if (
+        !row ||
+        row.idempotencyKey !== result.idempotencyKey ||
+        row.status !== "claimed" ||
+        row.claimedByDeviceId !== deviceRow.id
+      ) {
         ignored += 1;
         continue;
       }

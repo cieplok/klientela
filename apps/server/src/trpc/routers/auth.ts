@@ -24,6 +24,7 @@ export const authRouter = router({
         path: "/",
         httpOnly: true,
         sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
         expires: new Date(expiresAt),
       });
       return { id: user.id, email: user.email, role: user.role };

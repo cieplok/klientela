@@ -89,7 +89,7 @@ export function AppointmentDrawer({ mode, initial, employees, types, customers, 
 
         <div className="field">
           <label>Service</label>
-          <select value={typeId} onChange={(e) => { setTypeId(e.target.value); }}>
+          <select value={typeId} onChange={(e) => { setTypeId(e.target.value); }} disabled={mode === "edit"}>
             {types.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name} ({t.totalMin} min)

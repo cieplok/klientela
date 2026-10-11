@@ -102,8 +102,11 @@ export function shiftIntoWindow(
   if (mins >= startMin && mins <= endMin) return ts;
   const dayStart = localMidnightUtc(ts, timeZone);
   if (mins < startMin) return dayStart + startMin * MS_PER_MIN;
-  const nextDayStart = localMidnightUtc(dayStart + 30 * 60 * MS_PER_MIN, timeZone);
-  return nextDayStart + startMin * MS_PER_MIN;
+  // After the window: move to the *next* local day's opening. `dayStart + 24h`
+  // lands on the next day's midnight (a 30-min nudge would resolve to the same
+  // day and return a time in the past).
+  const nextMidnight = localMidnightUtc(dayStart + 24 * 60 * MS_PER_MIN, timeZone);
+  return nextMidnight + startMin * MS_PER_MIN;
 }
 
 /** Render a millisecond duration as "1 h 30 min" / "45 min". */

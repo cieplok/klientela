@@ -5,16 +5,11 @@ import { z } from "zod";
 import { appointment, customer } from "../../db/schema.js";
 import { protectedProcedure, router } from "../trpc.js";
 
-function normalizePhone(input: string): string {
-  const trimmed = input.trim();
-  const plus = trimmed.startsWith("+");
-  const digits = trimmed.replace(/[^0-9]/g, "");
-  return plus ? `+${digits}` : digits;
-}
+const E164 = /^\+[1-9]\d{7,14}$/;
 
 const customerInput = z.object({
   name: z.string().min(1),
-  phone: z.string().min(5),
+  phone: z.string().regex(E164, "Phone must be E.164, e.g. +48123123123"),
   email: z.string().optional(),
   notes: z.string().optional(),
   smsOptOut: z.boolean().default(false),
@@ -50,7 +45,7 @@ export const customersRouter = router({
       .values({
         id,
         name: input.name.trim(),
-        phone: normalizePhone(input.phone),
+        phone: input.phone.trim(),
         phoneRaw: input.phone.trim(),
         email: input.email?.trim() || null,
         notes: input.notes ?? null,
@@ -71,7 +66,7 @@ export const customersRouter = router({
         .update(customer)
         .set({
           name: patch.name?.trim() ?? existing.name,
-          phone: patch.phone ? normalizePhone(patch.phone) : existing.phone,
+          phone: patch.phone?.trim() ?? existing.phone,
           phoneRaw: patch.phone?.trim() ?? existing.phoneRaw,
           email: patch.email !== undefined ? patch.email || null : existing.email,
           notes: patch.notes !== undefined ? patch.notes : existing.notes,

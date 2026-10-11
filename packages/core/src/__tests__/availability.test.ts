@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { computeAvailability, maxConcurrency, type AvailabilityInput } from "../availability.js";
 import { resolvePlan } from "../plan.js";
 import { AppointmentType, MS_PER_MIN } from "../types.js";
-import { formatDuration, localMidnightUtc, weekdayInZone, workWindowsForDay } from "../tz.js";
+import { formatDuration, localMidnightUtc, shiftIntoWindow, weekdayInZone, workWindowsForDay } from "../tz.js";
 
 const min = (n: number) => n * MS_PER_MIN;
 
@@ -183,5 +183,35 @@ describe("time-zone helpers", () => {
     expect(formatDuration(min(45))).toBe("45 min");
     expect(formatDuration(min(60))).toBe("1 h");
     expect(formatDuration(min(95))).toBe("1 h 35 min");
+  });
+
+  it("shifts a send time into the quiet-hours window, always forward in time", () => {
+    const tz = "Europe/Warsaw"; // CET (UTC+1) in January
+    const win = { start: 9 * 60, end: 20 * 60 };
+    const inside = Date.UTC(2025, 0, 6, 10, 0, 0); // 11:00 local
+    expect(shiftIntoWindow(inside, tz, win.start, win.end)).toBe(inside);
+
+    const before = Date.UTC(2025, 0, 6, 2, 0, 0); // 03:00 local → 09:00 same day
+    expect(shiftIntoWindow(before, tz, win.start, win.end)).toBe(Date.UTC(2025, 0, 6, 8, 0, 0));
+
+    const after = Date.UTC(2025, 0, 6, 20, 30, 0); // 21:30 local → 09:00 NEXT day
+    const shifted = shiftIntoWindow(after, tz, win.start, win.end);
+    expect(shifted).toBe(Date.UTC(2025, 0, 7, 8, 0, 0));
+    expect(shifted).toBeGreaterThan(after); // must never move backwards
+  });
+});
+
+describe("split shifts", () => {
+  it("never lets a slot span a break, and offers slots in both windows", () => {
+    const slots = computeAvailability(
+      baseInput({
+        rangeEnd: min(360),
+        workWindows: [
+          { employeeId: "e1", start: min(60), end: min(120) },
+          { employeeId: "e1", start: min(180), end: min(240) },
+        ],
+      }),
+    );
+    expect(slots.map((s) => s.start)).toEqual([min(60), min(180)]);
   });
 });
