@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Secrets / local env
+.env
+.env.*
+!.env.example
+
+# QA run state (generated per run, not source)
+.ai/qa/artifacts_*/
+.ai/qa/test-env.json
+.ai/qa/test-env.env
+
+# Temp worktrees created by agent skills
+.ai/tmp/
+
+# OS noise
+.DS_Store
