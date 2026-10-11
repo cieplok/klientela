@@ -7,6 +7,7 @@ import { devicesRouter } from "./routers/devices.js";
 import { employeesRouter } from "./routers/employees.js";
 import { remindersRouter } from "./routers/reminders.js";
 import { settingsRouter } from "./routers/settings.js";
+import { staffUsersRouter } from "./routers/staffUsers.js";
 import { router } from "./trpc.js";
 
 export const appRouter = router({
@@ -19,6 +20,7 @@ export const appRouter = router({
   reminders: remindersRouter,
   devices: devicesRouter,
   settings: settingsRouter,
+  staffUsers: staffUsersRouter,
 });
 
 export type AppRouter = typeof appRouter;
