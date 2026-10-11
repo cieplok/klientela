@@ -44,8 +44,8 @@ Each slice is a branch based on the previous one; PRs target their parent branch
 
 ### Phase 1: Customers & services UI
 
-- [ ] 1.1 Customer search + detail (history, edit, delete)
-- [ ] 1.2 Service editing (segments, buffers, capabilities, deactivate)
+- [x] 1.1 Customer search + detail (history, edit, delete) — 22d4f15
+- [x] 1.2 Service editing (segments, buffers, capabilities, deactivate) — 22d4f15
 
 ### Phase 2: Reminders filters + device rotation
 
