@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { dateInputValue, dayBounds, fmtTime } from "../lib/format";
+import { dateInputValue, dayBounds, fmtTime, MS_PER_MIN } from "../lib/format";
 import { trpc } from "../trpc";
 
 export interface AppointmentRow {
@@ -23,11 +23,15 @@ export interface EmployeeOpt {
   id: string;
   name: string;
   active: boolean;
+  capacity: number;
+  color?: string;
 }
 export interface TypeOpt {
   id: string;
   name: string;
   color: string;
+  bufferBeforeMin: number;
+  bufferAfterMin: number;
   employeeIds: string[];
   totalMin: number;
   segments: { position: number; kind: string; durationMin: number; label?: string | undefined }[];
@@ -35,6 +39,7 @@ export interface TypeOpt {
 export interface CustomerOpt {
   id: string;
   name: string;
+  phone: string;
 }
 
 interface Props {
@@ -44,6 +49,23 @@ interface Props {
   types: TypeOpt[];
   customers: CustomerOpt[];
   onClose: () => void;
+}
+
+interface PlanRow {
+  kind: "active" | "gap";
+  durationMin: number;
+  label: string;
+}
+
+/** The ordered plan the engine will resolve: buffers (as active) + segments. */
+function resolvedRows(type: TypeOpt): PlanRow[] {
+  const rows: PlanRow[] = [];
+  if (type.bufferBeforeMin > 0) rows.push({ kind: "active", durationMin: type.bufferBeforeMin, label: "buffer" });
+  for (const s of [...type.segments].sort((a, b) => a.position - b.position)) {
+    rows.push({ kind: s.kind as "active" | "gap", durationMin: s.durationMin, label: s.label ?? s.kind });
+  }
+  if (type.bufferAfterMin > 0) rows.push({ kind: "active", durationMin: type.bufferAfterMin, label: "buffer" });
+  return rows;
 }
 
 export function AppointmentDrawer({ mode, initial, employees, types, customers, onClose }: Props) {
@@ -56,6 +78,11 @@ export function AppointmentDrawer({ mode, initial, employees, types, customers, 
   const [day, setDay] = useState(dateInputValue(initialStart));
   const [startAt, setStartAt] = useState(initialStart);
   const [notes, setNotes] = useState(appt?.notes ?? "");
+
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [newCustomer, setNewCustomer] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
 
   const selectedType = types.find((t) => t.id === typeId);
   const capableEmployees = useMemo(
@@ -99,6 +126,17 @@ export function AppointmentDrawer({ mode, initial, employees, types, customers, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slotKey]);
 
+  const createCustomer = trpc.customers.create.useMutation({
+    onSuccess: (created) => {
+      setCustomerId(created.id);
+      setCustomerQuery(created.name);
+      setNewCustomer(false);
+      setNewName("");
+      setNewPhone("");
+      void utils.customers.list.invalidate();
+    },
+  });
+
   function refresh() {
     void utils.appointments.list.invalidate();
     void utils.reminders.list.invalidate();
@@ -122,6 +160,14 @@ export function AppointmentDrawer({ mode, initial, employees, types, customers, 
   const error = create.error ?? update.error;
   const endAt = selectedSlot && selectedType ? selectedSlot.start + selectedType.totalMin * 60_000 : null;
 
+  const matches = customers.filter((c) => {
+    const q = customerQuery.trim().toLowerCase();
+    return q === "" || c.name.toLowerCase().includes(q) || c.phone.toLowerCase().includes(q);
+  });
+
+  const planRows = selectedType ? resolvedRows(selectedType) : [];
+  let cursor = startAt;
+
   return (
     <div className="drawer-backdrop" onClick={onClose}>
       <div className="drawer" onClick={(e) => e.stopPropagation()}>
@@ -141,35 +187,53 @@ export function AppointmentDrawer({ mode, initial, employees, types, customers, 
           </select>
         </div>
 
-        {selectedType && (
-          <div>
-            <div className="plan-preview">
-              {selectedType.segments.map((s) => (
-                <div
-                  key={s.position}
-                  className={`seg ${s.kind}`}
-                  title={`${s.label ?? s.kind} — ${s.durationMin} min`}
-                  style={{ width: `${s.durationMin * 3}px` }}
-                />
-              ))}
-            </div>
-            <p className="muted">
-              {selectedType.segments.filter((s) => s.kind === "gap").length > 0
-                ? "Amber = processing gap, the stylist is free for another client."
-                : "No processing gaps in this service."}
-            </p>
-          </div>
-        )}
-
         <div className="field">
           <label>Customer</label>
-          <select value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+          <input
+            value={customerQuery}
+            placeholder="Search by name or phone…"
+            onChange={(e) => setCustomerQuery(e.target.value)}
+          />
+          {matches.length > 0 && (
+            <select value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
+              {matches.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} — {c.phone}
+                </option>
+              ))}
+            </select>
+          )}
+          {matches.length === 0 && <span className="muted">No match — create the customer below.</span>}
+          {!newCustomer && (
+            <button onClick={() => setNewCustomer(true)} style={{ alignSelf: "flex-start" }}>
+              + New customer
+            </button>
+          )}
+          {newCustomer && (
+            <div className="panel" style={{ margin: "6px 0 0" }}>
+              <div className="grid2">
+                <div className="field">
+                  <label>Name</label>
+                  <input value={newName} onChange={(e) => setNewName(e.target.value)} />
+                </div>
+                <div className="field">
+                  <label>Phone (E.164)</label>
+                  <input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="+48123123123" />
+                </div>
+              </div>
+              {createCustomer.error && <p className="error">{createCustomer.error.message}</p>}
+              <div className="row">
+                <button
+                  className="primary"
+                  disabled={!newName || !newPhone || createCustomer.isPending}
+                  onClick={() => createCustomer.mutate({ name: newName, phone: newPhone, smsOptOut: false })}
+                >
+                  Create customer
+                </button>
+                <button onClick={() => setNewCustomer(false)}>Cancel</button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="field">
@@ -212,6 +276,32 @@ export function AppointmentDrawer({ mode, initial, employees, types, customers, 
           )}
           {availability.isError && <span className="error">{availability.error.message}</span>}
         </div>
+
+        {selectedType && selectedSlot && (
+          <div className="field">
+            <label>Resolved plan (the stylist is free during gaps)</label>
+            <table>
+              <tbody>
+                {planRows.map((r, i) => {
+                  const segStart = cursor;
+                  const segEnd = cursor + r.durationMin * MS_PER_MIN;
+                  cursor = segEnd;
+                  return (
+                    <tr key={i}>
+                      <td>
+                        <span className={r.kind === "gap" ? "badge gap" : "badge"}>{r.kind}</span>
+                      </td>
+                      <td>{r.label}</td>
+                      <td className="muted">
+                        {fmtTime(segStart)}–{fmtTime(segEnd)} · {r.durationMin}m
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         <div className="field">
           <label>Notes</label>
