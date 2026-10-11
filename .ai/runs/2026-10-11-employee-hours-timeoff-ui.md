@@ -40,10 +40,12 @@ This is the first of the "Phase 1 completion" slices called out as out-of-scope 
 
 ## Progress
 
+PR: #5
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Employee hours & time-off UI
 
 - [x] 1.1 Weekly-hours editor — 428978c
 - [x] 1.2 Time-off management — 428978c
-- [ ] 1.3 Validation
+- [x] 1.3 Validation — 60494d5
