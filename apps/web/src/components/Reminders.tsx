@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { fmtTime } from "../lib/format";
 import { trpc } from "../trpc";
 
@@ -9,12 +10,21 @@ const STATUS_BADGE: Record<string, string> = {
   cancelled: "badge gap",
 };
 
+const FILTERS = ["all", "pending", "claimed", "sent", "failed", "cancelled"] as const;
+type Filter = (typeof FILTERS)[number];
+
 export function Reminders() {
   const utils = trpc.useUtils();
-  const list = trpc.reminders.list.useQuery({});
+  const [filter, setFilter] = useState<Filter>("all");
+  const list = trpc.reminders.list.useQuery(filter === "all" ? {} : { status: filter });
   const devices = trpc.devices.list.useQuery();
-  const now = Date.now();
-  const stats = trpc.reminders.noShowCount.useQuery({ from: now - 30 * 86400000, to: now + 86400000 });
+  // Stable query bounds: recomputing Date.now() each render minted a new query key
+  // and refetched the stats in an endless loop (issue #6).
+  const [range] = useState(() => {
+    const now = Date.now();
+    return { from: now - 30 * 86_400_000, to: now + 86_400_000 };
+  });
+  const stats = trpc.reminders.noShowCount.useQuery(range);
   const run = trpc.reminders.runScheduler.useMutation({
     onSuccess: () => {
       void utils.reminders.list.invalidate();
@@ -23,6 +33,8 @@ export function Reminders() {
   });
   const retry = trpc.reminders.retry.useMutation({ onSuccess: () => void utils.reminders.list.invalidate() });
   const cancel = trpc.reminders.cancel.useMutation({ onSuccess: () => void utils.reminders.list.invalidate() });
+
+  const rows = list.data ?? [];
 
   return (
     <div>
@@ -34,11 +46,11 @@ export function Reminders() {
           </button>
         </div>
         <p className="muted">
-          Reminders are queued here; the dedicated phone sends them (Phase 2). No SMS leaves the server yet.
+          Reminders are queued here; the dedicated phone sends them (Phase 2, deferred). No SMS leaves the server yet.
         </p>
         <p className="muted">
-          Sent: {(list.data ?? []).filter((r) => r.status === "sent").length} · Pending:{" "}
-          {(list.data ?? []).filter((r) => r.status === "pending").length} · No-shows (30 days):{" "}
+          Sent: {rows.filter((r) => r.status === "sent").length} · Pending:{" "}
+          {rows.filter((r) => r.status === "pending").length} · No-shows (30 days):{" "}
           {stats.data ? `${stats.data.noShow}/${stats.data.total}` : "…"}
         </p>
       </div>
@@ -62,8 +74,18 @@ export function Reminders() {
       </div>
 
       <div className="panel">
-        <h2>Queue</h2>
+        <div className="row" style={{ justifyContent: "space-between" }}>
+          <h2 style={{ margin: 0 }}>Queue</h2>
+          <div className="row">
+            {FILTERS.map((f) => (
+              <button key={f} className={filter === f ? "filter active" : "filter"} onClick={() => setFilter(f)}>
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
         {list.isLoading && <p className="muted">Loading…</p>}
+        {list.error && <p className="error">{list.error.message}</p>}
         <table>
           <thead>
             <tr>
@@ -77,7 +99,7 @@ export function Reminders() {
             </tr>
           </thead>
           <tbody>
-            {(list.data ?? []).map((r) => (
+            {rows.map((r) => (
               <tr key={r.id}>
                 <td>
                   <span className={STATUS_BADGE[r.status] ?? "badge"}>{r.status}</span>

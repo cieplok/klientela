@@ -49,9 +49,9 @@ Each slice is a branch based on the previous one; PRs target their parent branch
 
 ### Phase 2: Reminders filters + device rotation
 
-- [ ] 2.1 Fix Reminders no-show refetch loop (#6)
-- [ ] 2.2 Reminder status filter
-- [ ] 2.3 Device token rotation (server + UI)
+- [x] 2.1 Fix Reminders no-show refetch loop (#6) — 226ea91
+- [x] 2.2 Reminder status filter — 226ea91
+- [x] 2.3 Device token rotation (server + UI) — 226ea91
 
 ### Phase 3: Staff accounts + permissions
 

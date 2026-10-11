@@ -32,6 +32,12 @@ export function Settings() {
     },
   });
   const revokeDevice = trpc.devices.revoke.useMutation({ onSuccess: () => void utils.devices.list.invalidate() });
+  const rotateDevice = trpc.devices.rotate.useMutation({
+    onSuccess: (data) => {
+      setIssuedToken(data.token);
+      void utils.devices.list.invalidate();
+    },
+  });
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -107,7 +113,8 @@ export function Settings() {
       <div className="panel">
         <h2>Sender devices</h2>
         <p className="muted">
-          Create a device, paste its token into the phone app once. The raw token is shown only here.
+          Create a device and paste its token into the phone app once. The raw token is shown only here. Rotating issues a
+          new token and invalidates the old one; revoking disables the device.
         </p>
         <div className="row" style={{ marginBottom: 12 }}>
           <input value={deviceName} onChange={(e) => setDeviceName(e.target.value)} placeholder="Salon phone" style={{ maxWidth: 260 }} />
@@ -130,9 +137,14 @@ export function Settings() {
                 <td className="muted">{d.active ? "active" : "revoked"}</td>
                 <td>
                   {d.active && (
-                    <button className="danger" onClick={() => revokeDevice.mutate({ id: d.id })}>
-                      Revoke
-                    </button>
+                    <div className="row">
+                      <button onClick={() => rotateDevice.mutate({ id: d.id })} disabled={rotateDevice.isPending}>
+                        Rotate token
+                      </button>
+                      <button className="danger" onClick={() => revokeDevice.mutate({ id: d.id })}>
+                        Revoke
+                      </button>
+                    </div>
                   )}
                 </td>
               </tr>
