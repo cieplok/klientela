@@ -55,9 +55,9 @@ Each slice is a branch based on the previous one; PRs target their parent branch
 
 ### Phase 3: Staff accounts + permissions
 
-- [ ] 3.1 `staffUsers` router (list/create/update/reset) + tests
-- [ ] 3.2 Settings "Users" admin UI
-- [ ] 3.3 Permission-aware UI (hide admin-only, no-permission state)
+- [x] 3.1 `staffUsers` router (list/create/update/reset) + tests — c793dce
+- [x] 3.2 Settings "Users" admin UI — c793dce
+- [x] 3.3 Permission-aware UI (hide admin-only, no-permission state) — c793dce
 
 ### Phase 4: Calendar week view + drawer polish
 
