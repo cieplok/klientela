@@ -4,6 +4,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { hashToken } from "../../auth/session.js";
 import { device } from "../../db/schema.js";
+import { rotateDeviceToken } from "../../services/devices.js";
 import { adminProcedure, protectedProcedure, router } from "../trpc.js";
 
 export const devicesRouter = router({
@@ -28,6 +29,11 @@ export const devicesRouter = router({
       .run();
     // The raw token is shown once and never stored in plaintext.
     return { id, token };
+  }),
+  rotate: adminProcedure.input(z.object({ id: z.string() })).mutation(({ ctx, input }) => {
+    const result = rotateDeviceToken(ctx.db, input.id);
+    if (!result) throw new TRPCError({ code: "NOT_FOUND" });
+    return result;
   }),
   revoke: adminProcedure.input(z.object({ id: z.string() })).mutation(({ ctx, input }) => {
     const row = ctx.db.select().from(device).where(eq(device.id, input.id)).get();

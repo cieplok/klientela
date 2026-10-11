@@ -25,6 +25,8 @@ button {
 button.primary { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
 button.danger { color: var(--danger); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.filter { padding: 4px 10px; font-size: 12px; text-transform: capitalize; }
+button.filter.active { background: #eef2ff; color: var(--brand); border-color: var(--brand); font-weight: 600; }
 
 input, select, textarea {
   font: inherit;
