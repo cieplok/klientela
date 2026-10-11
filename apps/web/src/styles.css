@@ -60,6 +60,7 @@ input, select, textarea {
 .error { color: var(--danger); font-size: 13px; }
 .badge { font-size: 12px; padding: 2px 7px; border-radius: 999px; background: #eef2ff; color: var(--brand); }
 .badge.gap { background: #fff3d6; color: #a56a00; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: middle; }
 
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); font-size: 14px; }
