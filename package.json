@@ -8,7 +8,8 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "dev": "turbo run dev",
-    "seed": "pnpm --filter @klientela/server seed"
+    "seed": "pnpm --filter @klientela/server seed",
+    "backup": "sh scripts/backup-db.sh"
   },
   "devDependencies": {
     "turbo": "2.11.7",

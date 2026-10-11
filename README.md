@@ -5,8 +5,8 @@ companion Android app that sends customer SMS reminders from the salon's own ded
 (no third-party SMS service). The full design lives in
 [`.ai/specs/2026-10-11-self-hosted-salon-booking-system.md`](.ai/specs/2026-10-11-self-hosted-salon-booking-system.md).
 
-**Status: Phase 1 implemented** — the booking core and the server-side reminder queue / frozen
-`/sync/v1` contract. Nothing sends SMS yet; the Android sender is Phase 2.
+**Status: Phase 1 complete (Android SMS sender deferred)** — the booking core and the server-side reminder queue / frozen
+`/sync/v1` contract. Nothing sends SMS yet; the Android sender is deferred.
 
 ## What it does
 
@@ -58,13 +58,27 @@ apps/web        React SPA (calendar, customers, employees, services, reminders, 
 
 `docker-compose.yml` runs the server and Caddy (TLS + static web) on a mini-PC. Build the web
 bundle first, then `docker compose up -d`. For remote access use a Tailscale tailnet rather than
-port-forwarding. Back up the SQLite file in `./data` (nightly copy is enough).
+port-forwarding.
 
 > The compose file and `apps/server/Dockerfile` are provided but were not executed in the
 > authoring environment; validate them on the target host.
 
-## Phase 2 (not in this repo yet)
+## Backups
 
-A dedicated-device Android sender (pure Kotlin, `SEND_SMS`) that consumes `/sync/v1`, gated on a
-deliverability pilot from the salon's SIM. The reminder seam is versioned so the sender can be
+Back up the SQLite database with a consistent snapshot while the server keeps running:
+
+```bash
+pnpm backup                 # or: DB_PATH=/data/klientela.db BACKUP_DIR=/data/backups sh scripts/backup-db.sh
+```
+
+`scripts/backup-db.sh` uses `sqlite3 .backup` when available (WAL-safe) and prunes snapshots older
+than `KEEP_DAYS` (default 14). Schedule it nightly from the host or a sidecar, e.g.:
+`30 3 * * *  DB_PATH=/data/klientela.db BACKUP_DIR=/data/backups /path/to/scripts/backup-db.sh`
+
+## Phase 2 — deferred
+
+The dedicated-device Android sender (pure Kotlin, `SEND_SMS`) is **intentionally deferred**. It is a
+client of the frozen `/sync/v1` seam, so nothing in the core, server or web depends on it yet: the
+reminder queue, scheduler and dashboard all work with nothing ever sent. When SMS is picked up, it
+begins with a deliverability pilot from the salon's SIM; the seam is versioned so the sender can be
 swapped for a GSM modem or a paid API without touching booking logic.

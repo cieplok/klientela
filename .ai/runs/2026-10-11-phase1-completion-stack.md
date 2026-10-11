@@ -66,5 +66,5 @@ Each slice is a branch based on the previous one; PRs target their parent branch
 
 ### Phase 5: Ops & hygiene
 
-- [ ] 5.1 Nightly SQLite backup script + docs
-- [ ] 5.2 Lint gate / doc-config harmony
+- [x] 5.1 Nightly SQLite backup script + docs — 646be76
+- [x] 5.2 Lint gate / doc-config harmony — 646be76
