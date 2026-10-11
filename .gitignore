@@ -7,6 +7,15 @@ build/
 out/
 *.tsbuildinfo
 
+# Turbo cache
+.turbo/
+
+# Local databases
+*.db
+*.db-wal
+*.db-shm
+apps/server/data/
+
 # Secrets / local env
 .env
 .env.*

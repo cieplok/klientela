@@ -1,0 +1,42 @@
+# Self-hosted deployment for one salon. Caddy terminates TLS and serves the built
+# web app; the server owns SQLite and the reminder queue.
+#
+# Prerequisites on the salon mini-PC: Docker + Compose, and a built web bundle
+# (`pnpm --filter @klientela/web build`) so ./apps/web/dist exists.
+#
+# NOTE: this compose file was authored but NOT executed in the authoring
+# environment (no Docker daemon available there). Verify on the target host.
+services:
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      DB_PATH: /data/klientela.db
+      SALON_TZ: ${SALON_TZ:-Europe/Warsaw}
+      WEB_ORIGIN: ${WEB_ORIGIN:-https://localhost}
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    depends_on:
+      - server
+    environment:
+      SALON_HOST: ${SALON_HOST:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./apps/web/dist:/srv/web:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
