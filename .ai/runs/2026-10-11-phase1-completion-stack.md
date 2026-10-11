@@ -61,8 +61,8 @@ Each slice is a branch based on the previous one; PRs target their parent branch
 
 ### Phase 4: Calendar week view + drawer polish
 
-- [ ] 4.1 Week view + capacity cue
-- [ ] 4.2 Drawer customer search/create + resolved plan
+- [x] 4.1 Week view + capacity cue — 6398019
+- [x] 4.2 Drawer customer search/create + resolved plan — 6398019
 
 ### Phase 5: Ops & hygiene
 
