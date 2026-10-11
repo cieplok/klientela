@@ -102,11 +102,14 @@ export function Employees() {
 function EmployeeEditor({ employeeId, onClose }: { employeeId: string; onClose: () => void }) {
   const utils = trpc.useUtils();
   const detail = trpc.employees.get.useQuery({ id: employeeId });
-  const now = Date.now();
+  // Stable bounds: recomputing Date.now() on every render would mint a new query
+  // key and refetch the list in an endless loop.
+  const [rangeStart] = useState(() => Date.now() - 86_400_000);
+  const [rangeEnd] = useState(() => Date.now() + 366 * 86_400_000);
   const timeOff = trpc.employees.listTimeOff.useQuery({
     employeeId,
-    from: now - 86_400_000,
-    to: now + 366 * 86_400_000,
+    from: rangeStart,
+    to: rangeEnd,
   });
 
   const [name, setName] = useState("");
