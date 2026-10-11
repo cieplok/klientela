@@ -84,6 +84,7 @@ th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: upp
 
 .drawer-backdrop { position: fixed; inset: 0; background: rgba(15,18,28,0.35); display: flex; justify-content: flex-end; z-index: 20; }
 .drawer { width: 380px; max-width: 92vw; background: var(--panel); height: 100%; padding: 18px; overflow-y: auto; box-shadow: -8px 0 24px rgba(0,0,0,0.12); }
+.drawer.wide { width: 480px; }
 .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
 .login-card { width: 340px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
 .plan-preview { display: flex; gap: 4px; margin: 8px 0; }

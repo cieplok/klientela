@@ -34,6 +34,21 @@ export function minutesBetween(a: number, b: number): number {
   return Math.round((b - a) / MS_PER_MIN);
 }
 
+/** Minutes from local midnight → `HH:MM` for an `<input type="time">`. */
+export function minutesToTimeInput(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/** `HH:MM` from an `<input type="time">` → minutes from local midnight. */
+export function timeInputToMinutes(value: string): number {
+  const [h, m] = value.split(":").map(Number);
+  return (h ?? 0) * 60 + (m ?? 0);
+}
+
+export const WEEKDAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 /** `YYYY-MM-DD` (local) for the day containing `ts`. */
 export function dateInputValue(ts: number): string {
   const d = new Date(ts);
